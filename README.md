@@ -1,4 +1,3 @@
- (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/.gitignore b/.gitignore
 new file mode 100644
 index 0000000000000000000000000000000000000000..f15eb515a7e4eaea42f8236c719554840e033a1e
@@ -839,6 +838,3 @@ index 0000000000000000000000000000000000000000..0585d9d59bcf60aaaf9a0f2b12b2dd00
 +app.listen(port, () => {
 +  console.log(`HDMS Lead Manager running on port ${port}`);
 +});
- 
-EOF
-)
