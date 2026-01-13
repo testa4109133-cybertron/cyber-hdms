@@ -1,3 +1,4 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/.gitignore b/.gitignore
 new file mode 100644
 index 0000000000000000000000000000000000000000..f15eb515a7e4eaea42f8236c719554840e033a1e
@@ -30,22 +31,14 @@ index 0000000000000000000000000000000000000000..0acdf0e8e3237ae2ce98f8c3ca70b2c6
 +}
 diff --git a/public/app.js b/public/app.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..0ce35ef4356218e23b4c3e373a7f54ffb0e52dec
+index 0000000000000000000000000000000000000000..fc86cc9658e1bb76916795f8f5c5c280f167ae50
 --- /dev/null
 +++ b/public/app.js
-@@ -0,0 +1,316 @@
+@@ -0,0 +1,372 @@
 +const { useEffect, useMemo, useState } = React;
 +
-+const BUSINESS_TYPES = [
-+  "Retail",
-+  "Hospitality",
-+  "Technology",
-+  "Healthcare",
-+  "Professional Services",
-+  "Other",
-+];
-+
-+const SERVICES = ["Sales", "Branding", "Marketing"];
++const GROWTH_NEEDS = ["Sales", "Branding", "Marketing", "Combination"];
++const BUSINESS_STAGES = ["Early", "Growing", "Scaling"];
 +
 +const STATUSES = [
 +  "New",
@@ -71,8 +64,9 @@ index 0000000000000000000000000000000000000000..0ce35ef4356218e23b4c3e373a7f54ff
 +  name: "",
 +  phone: "",
 +  businessName: "",
-+  businessType: "",
-+  serviceRequired: "",
++  city: "",
++  growthNeed: "",
++  businessStage: "",
 +  budgetRange: "",
 +};
 +
@@ -81,6 +75,8 @@ index 0000000000000000000000000000000000000000..0ce35ef4356218e23b4c3e373a7f54ff
 +  const [leads, setLeads] = useState([]);
 +  const [loading, setLoading] = useState(true);
 +  const [message, setMessage] = useState("");
++  const [growthFilter, setGrowthFilter] = useState("All");
++  const [stageFilter, setStageFilter] = useState("All");
 +
 +  const fetchLeads = async () => {
 +    try {
@@ -121,7 +117,7 @@ index 0000000000000000000000000000000000000000..0ce35ef4356218e23b4c3e373a7f54ff
 +      setFormState(defaultFormState);
 +      fetchLeads();
 +    } else {
-+      setMessage("Please complete every field before submitting.");
++      setMessage("Please complete the required fields before submitting.");
 +    }
 +  };
 +
@@ -139,13 +135,23 @@ index 0000000000000000000000000000000000000000..0ce35ef4356218e23b4c3e373a7f54ff
 +    }
 +  };
 +
++  const filteredLeads = useMemo(() => {
++    return leads.filter((lead) => {
++      const matchesGrowth =
++        growthFilter === "All" || lead.growth_need === growthFilter;
++      const matchesStage =
++        stageFilter === "All" || lead.business_stage === stageFilter;
++      return matchesGrowth && matchesStage;
++    });
++  }, [leads, growthFilter, stageFilter]);
++
 +  return (
 +    <div>
 +      <header>
 +        <h1>HDMS Lead Management</h1>
 +        <p>
-+          High Dreams Management Services — organize leads, track status, and
-+          capture follow-ups.
++          High Dreams Management Services — every client is treated equally, no
++          matter the industry or size.
 +        </p>
 +      </header>
 +      <main>
@@ -165,7 +171,7 @@ index 0000000000000000000000000000000000000000..0ce35ef4356218e23b4c3e373a7f54ff
 +                />
 +              </div>
 +              <div>
-+                <label htmlFor="phone">Phone Number</label>
++                <label htmlFor="phone">Phone</label>
 +                <input
 +                  id="phone"
 +                  name="phone"
@@ -187,48 +193,58 @@ index 0000000000000000000000000000000000000000..0ce35ef4356218e23b4c3e373a7f54ff
 +                />
 +              </div>
 +              <div>
-+                <label htmlFor="businessType">Business Type</label>
++                <label htmlFor="city">City</label>
++                <input
++                  id="city"
++                  name="city"
++                  value={formState.city}
++                  onChange={handleChange}
++                  placeholder="Austin"
++                  required
++                />
++              </div>
++              <div>
++                <label htmlFor="growthNeed">Primary Growth Need</label>
 +                <select
-+                  id="businessType"
-+                  name="businessType"
-+                  value={formState.businessType}
++                  id="growthNeed"
++                  name="growthNeed"
++                  value={formState.growthNeed}
 +                  onChange={handleChange}
 +                  required
 +                >
-+                  <option value="">Select a type</option>
-+                  {BUSINESS_TYPES.map((type) => (
-+                    <option key={type} value={type}>
-+                      {type}
++                  <option value="">Select a growth need</option>
++                  {GROWTH_NEEDS.map((need) => (
++                    <option key={need} value={need}>
++                      {need}
 +                    </option>
 +                  ))}
 +                </select>
 +              </div>
 +              <div>
-+                <label htmlFor="serviceRequired">Service Required</label>
++                <label htmlFor="businessStage">Business Stage</label>
 +                <select
-+                  id="serviceRequired"
-+                  name="serviceRequired"
-+                  value={formState.serviceRequired}
++                  id="businessStage"
++                  name="businessStage"
++                  value={formState.businessStage}
 +                  onChange={handleChange}
 +                  required
 +                >
-+                  <option value="">Select a service</option>
-+                  {SERVICES.map((service) => (
-+                    <option key={service} value={service}>
-+                      {service}
++                  <option value="">Select a stage</option>
++                  {BUSINESS_STAGES.map((stage) => (
++                    <option key={stage} value={stage}>
++                      {stage}
 +                    </option>
 +                  ))}
 +                </select>
 +              </div>
 +              <div>
-+                <label htmlFor="budgetRange">Budget Range</label>
++                <label htmlFor="budgetRange">Budget Range (optional)</label>
 +                <input
 +                  id="budgetRange"
 +                  name="budgetRange"
 +                  value={formState.budgetRange}
 +                  onChange={handleChange}
 +                  placeholder="$5k - $15k"
-+                  required
 +                />
 +              </div>
 +              <button type="submit">Save Lead</button>
@@ -252,13 +268,51 @@ index 0000000000000000000000000000000000000000..0ce35ef4356218e23b4c3e373a7f54ff
 +
 +        <section>
 +          <div className="section-title">Admin dashboard</div>
++          <div className="card filter-bar">
++            <div>
++              <label htmlFor="filter-growth">Filter by growth need</label>
++              <select
++                id="filter-growth"
++                value={growthFilter}
++                onChange={(event) => setGrowthFilter(event.target.value)}
++              >
++                <option value="All">All</option>
++                {GROWTH_NEEDS.map((need) => (
++                  <option key={need} value={need}>
++                    {need}
++                  </option>
++                ))}
++              </select>
++            </div>
++            <div>
++              <label htmlFor="filter-stage">Filter by stage</label>
++              <select
++                id="filter-stage"
++                value={stageFilter}
++                onChange={(event) => setStageFilter(event.target.value)}
++              >
++                <option value="All">All</option>
++                {BUSINESS_STAGES.map((stage) => (
++                  <option key={stage} value={stage}>
++                    {stage}
++                  </option>
++                ))}
++              </select>
++            </div>
++            <div className="filter-summary">
++              Showing {filteredLeads.length} of {leads.length} leads
++            </div>
++          </div>
 +          {loading ? (
 +            <div className="card">Loading leads...</div>
-+          ) : leads.length === 0 ? (
-+            <div className="card">No leads yet. Add your first lead above.</div>
++          ) : filteredLeads.length === 0 ? (
++            <div className="card">
++              No leads match the selected filters. Adjust the filters or add a
++              new lead.
++            </div>
 +          ) : (
 +            <div className="grid">
-+              {leads.map((lead) => (
++              {filteredLeads.map((lead) => (
 +                <LeadCard key={lead.id} lead={lead} onUpdate={handleUpdate} />
 +              ))}
 +            </div>
@@ -294,10 +348,13 @@ index 0000000000000000000000000000000000000000..0ce35ef4356218e23b4c3e373a7f54ff
 +          <div className="lead-meta">
 +            <span>{lead.business_name}</span>
 +            <span>{lead.phone}</span>
++            <span>{lead.city}</span>
 +            <span>
-+              {lead.business_type} · {lead.service_required}
++              {lead.growth_need} · {lead.business_stage}
 +            </span>
-+            <span>Budget: {lead.budget_range}</span>
++            <span>
++              Budget: {lead.budget_range ? lead.budget_range : "Not provided"}
++            </span>
 +          </div>
 +        </div>
 +        <span className="status-pill" style={statusStyle}>
@@ -387,10 +444,10 @@ index 0000000000000000000000000000000000000000..3be49c9776b6a67c257cbcd3a4a96142
 +</html>
 diff --git a/public/styles.css b/public/styles.css
 new file mode 100644
-index 0000000000000000000000000000000000000000..04e9182e708db1cb2365c99988fb1fcbe887a32b
+index 0000000000000000000000000000000000000000..ed36e56337f491cebdc2f06a2821bd09ade35ff7
 --- /dev/null
 +++ b/public/styles.css
-@@ -0,0 +1,189 @@
+@@ -0,0 +1,208 @@
 +:root {
 +  color-scheme: light;
 +  font-family: "Inter", system-ui, sans-serif;
@@ -571,6 +628,25 @@ index 0000000000000000000000000000000000000000..04e9182e708db1cb2365c99988fb1fcb
 +  font-size: 0.9rem;
 +}
 +
++.filter-bar {
++  display: grid;
++  gap: 12px;
++  margin-bottom: 20px;
++}
++
++.filter-summary {
++  font-size: 0.9rem;
++  color: #475569;
++  align-self: end;
++}
++
++@media (min-width: 720px) {
++  .filter-bar {
++    grid-template-columns: repeat(3, minmax(0, 1fr));
++    align-items: end;
++  }
++}
++
 +@media (max-width: 720px) {
 +  header {
 +    text-align: left;
@@ -582,10 +658,10 @@ index 0000000000000000000000000000000000000000..04e9182e708db1cb2365c99988fb1fcb
 +}
 diff --git a/server.js b/server.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..85dd36eb4add74af43a48bf87b2d3603dae43636
+index 0000000000000000000000000000000000000000..0585d9d59bcf60aaaf9a0f2b12b2dd00add4c11a
 --- /dev/null
 +++ b/server.js
-@@ -0,0 +1,180 @@
+@@ -0,0 +1,177 @@
 +const express = require("express");
 +const path = require("path");
 +const fs = require("fs");
@@ -619,9 +695,10 @@ index 0000000000000000000000000000000000000000..85dd36eb4add74af43a48bf87b2d3603
 +      name TEXT NOT NULL,
 +      phone TEXT NOT NULL,
 +      business_name TEXT NOT NULL,
-+      business_type TEXT NOT NULL,
-+      service_required TEXT NOT NULL,
-+      budget_range TEXT NOT NULL,
++      city TEXT NOT NULL,
++      growth_need TEXT NOT NULL,
++      business_stage TEXT NOT NULL,
++      budget_range TEXT,
 +      status TEXT NOT NULL,
 +      notes TEXT NOT NULL,
 +      created_at TEXT NOT NULL,
@@ -660,20 +737,14 @@ index 0000000000000000000000000000000000000000..85dd36eb4add74af43a48bf87b2d3603
 +    name,
 +    phone,
 +    businessName,
-+    businessType,
-+    serviceRequired,
++    city,
++    growthNeed,
++    businessStage,
 +    budgetRange,
 +  } = req.body;
 +
-+  if (
-+    !name ||
-+    !phone ||
-+    !businessName ||
-+    !businessType ||
-+    !serviceRequired ||
-+    !budgetRange
-+  ) {
-+    res.status(400).json({ error: "All fields are required" });
++  if (!name || !phone || !businessName || !city || !growthNeed || !businessStage) {
++    res.status(400).json({ error: "Required fields are missing" });
 +    return;
 +  }
 +
@@ -686,22 +757,24 @@ index 0000000000000000000000000000000000000000..85dd36eb4add74af43a48bf87b2d3603
 +      name,
 +      phone,
 +      business_name,
-+      business_type,
-+      service_required,
++      city,
++      growth_need,
++      business_stage,
 +      budget_range,
 +      status,
 +      notes,
 +      created_at,
 +      updated_at
-+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
++    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 +    ,
 +    [
 +      name,
 +      phone,
 +      businessName,
-+      businessType,
-+      serviceRequired,
-+      budgetRange,
++      city,
++      growthNeed,
++      businessStage,
++      budgetRange || null,
 +      status,
 +      notes,
 +      now,
@@ -766,3 +839,6 @@ index 0000000000000000000000000000000000000000..85dd36eb4add74af43a48bf87b2d3603
 +app.listen(port, () => {
 +  console.log(`HDMS Lead Manager running on port ${port}`);
 +});
+ 
+EOF
+)
